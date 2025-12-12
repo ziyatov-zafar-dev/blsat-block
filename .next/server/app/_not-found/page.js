@@ -1,0 +1,13 @@
+var R=require("../../chunks/ssr/[turbopack]_runtime.js")("server/app/_not-found/page.js")
+R.c("server/chunks/ssr/[root-of-the-server]__e3cf321d._.js")
+R.c("server/chunks/ssr/f9432_next_dist_c425d711._.js")
+R.c("server/chunks/ssr/f9432_next_dist_esm_build_templates_app-page_5f204382.js")
+R.c("server/chunks/ssr/[root-of-the-server]__fd6df757._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__5ce3f204._.js")
+R.c("server/chunks/ssr/f9432_next_dist_8e01c7e1._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__62908f74._.js")
+R.c("server/chunks/ssr/f9432_next_dist_client_components_9cd6f314._.js")
+R.c("server/chunks/ssr/f9432_next_dist_client_components_builtin_forbidden_34cb6893.js")
+R.c("server/chunks/ssr/2f7c9_block-puzzle-game__next-internal_server_app__not-found_page_actions_392af6f4.js")
+R.m(4999)
+module.exports=R.m(4999).exports

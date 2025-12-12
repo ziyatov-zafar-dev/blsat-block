@@ -124,10 +124,17 @@
   }
 }
 
-/* Mobile touch optimization */
+/* Mobile, tablet ve PC icin touch ve scroll optimizasyonlari */
 * {
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+/* Drag sirasinda scroll'u engelle */
+body.dragging {
+  overflow: hidden;
+  touch-action: none;
 }
 
 /* Smooth animations */
@@ -143,4 +150,25 @@
 
 .animate-pulse-glow {
   animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+/* Responsive breakpoints icin ek stiller */
+@media (min-width: 768px) {
+  .game-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .game-container {
+    max-width: 700px;
+  }
+}
+
+/* Touch cihazlar icin hover efektlerini kaldir */
+@media (hover: none) {
+  button:hover {
+    transform: none !important;
+  }
 }
