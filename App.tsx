@@ -12,6 +12,11 @@ import OTPVerify from './pages/OTPVerify';
 import ForgotPassword from './pages/ForgotPassword';
 import ChatDashboard from './pages/ChatDashboard';
 import Profile from './pages/Profile';
+import SettingsChangeProfile from './pages/SettingsChangeProfile';
+import SettingsChangeEmail from './pages/SettingsChangeEmail';
+import SettingsChangePassword from './pages/SettingsChangePassword';
+import SettingsChangeUsername from './pages/SettingsChangeUsername';
+import SettingsDevices from './pages/SettingsDevices';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,7 +58,7 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [accessToken]);
 
-  if (!ready) return <div className="h-screen flex items-center justify-center">Yuklanmoqda...</div>;
+  if (!ready) return <div className="h-screen flex items-center justify-center">Yükleniyor...</div>;
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -81,6 +86,31 @@ const App: React.FC = () => {
           <Route path="/profile" element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings/change-profile" element={
+            <ProtectedRoute>
+              <SettingsChangeProfile />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings/change-email" element={
+            <ProtectedRoute>
+              <SettingsChangeEmail />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings/change-password" element={
+            <ProtectedRoute>
+              <SettingsChangePassword />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings/change-username" element={
+            <ProtectedRoute>
+              <SettingsChangeUsername />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings/device" element={
+            <ProtectedRoute>
+              <SettingsDevices />
             </ProtectedRoute>
           } />
 

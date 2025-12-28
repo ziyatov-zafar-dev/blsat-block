@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Send, Search, MoreVertical, LogOut, User as UserIcon, Settings, Smile, Phone, Video, Pin, ArrowDown, X, Mic, Square, Paperclip, Pause, Play, Trash2, Eye, Folder, ExternalLink, BellOff, CircleDot, Check, CheckCheck, Reply, Sun, Moon, SkipForward, SkipBack, Volume2, ListMusic } from 'lucide-react';
+import { Send, Search, MoreVertical, LogOut, User as UserIcon, Settings, Smile, Phone, Video, Pin, ArrowDown, X, Mic, Square, Paperclip, Pause, Play, Trash2, Eye, Folder, ExternalLink, BellOff, CircleDot, Check, CheckCheck, Reply, Sun, Moon, SkipForward, SkipBack, Volume2, ListMusic, Lock, AtSign, Mail } from 'lucide-react';
 
 import { useAuthStore } from '../store/authStore';
 import { authService } from '../services/authService';
@@ -18,11 +18,11 @@ class ChatErrorBoundary extends React.Component<{ children: React.ReactNode }, {
     return { hasError: true };
   }
   componentDidCatch(err: any) {
-    console.error('Chat error boundary caught', err);
+    console.error('Chat hatası yakalandı', err);
   }
   render() {
     if (this.state.hasError) {
-      return <div className="p-6 text-center text-sm text-red-600">Chatni yuklashda xatolik. Sahifani yangilang.</div>;
+      return <div className="p-6 text-center text-sm text-red-600">Sohbet yüklenirken hata oluştu. Sayfayı yenileyin.</div>;
     }
     return this.props.children;
   }
@@ -72,6 +72,7 @@ const ChatDashboardInner: React.FC = () => {
   const [voiceCaption, setVoiceCaption] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showPlayerQueue, setShowPlayerQueue] = useState(false);
   const [playerChatId, setPlayerChatId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
@@ -227,7 +228,7 @@ const ChatDashboardInner: React.FC = () => {
               onClick={() => navigator?.clipboard?.writeText(code).catch(() => { })}
               className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-100 px-2 py-1 rounded-md border border-slate-600 transition-colors"
             >
-              Copy
+              Kopyala
             </button>
           </div>
           <pre className="px-3 py-2 whitespace-pre-wrap overflow-x-auto">
@@ -257,7 +258,7 @@ const ChatDashboardInner: React.FC = () => {
       lua: 'lua', luajit: 'lua',
       dart: 'dart', swift: 'swift', julia: 'julia', r: 'r',
       matlab: 'matlab', octave: 'matlab',
-      haskell: 'haskell', hs: 'haskell', elixir: 'elixir', ex: 'elixir', exs: 'elixir', erlang: 'erlang',
+      haskell: 'hasKELL', hs: 'haskell', elixir: 'elixir', ex: 'elixir', exs: 'elixir', erlang: 'erlang',
       ocaml: 'ocaml', reasonml: 'reasonml', clojure: 'clojure', clj: 'clojure', commonlisp: 'lisp', cl: 'lisp', scheme: 'scheme', racket: 'racket',
       javascript: 'javascript', js: 'javascript', typescript: 'typescript', ts: 'typescript', coffeescript: 'coffeescript', livescript: 'livescript',
       html: 'html', xml: 'xml', svg: 'xml', xsd: 'xml', xsl: 'xml',
@@ -355,7 +356,7 @@ const ChatDashboardInner: React.FC = () => {
   const formatDuration = (ms?: number) => {
     if (!ms || ms < 0) return '00:00';
     const total = Math.round(ms / 1000);
-    const m = Math.floor(total / 60).toString(); // 0:11 format
+    const m = Math.floor(total / 60).toString();
     const s = (total % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   };
@@ -412,7 +413,7 @@ const ChatDashboardInner: React.FC = () => {
     if (activeAudioChatIdRef.current !== currentQueueChatIdRef.current) return;
     const prev = getPrevAudio(currentId);
     if (prev?.url) {
-      handlePlayPause(prev.url, prev.label || 'Audio', prev.id, activeAudioChatIdRef.current, false);
+      handlePlayPause(prev.url, prev.label || 'Ses', prev.id, activeAudioChatIdRef.current, false);
     }
   };
 
@@ -422,7 +423,7 @@ const ChatDashboardInner: React.FC = () => {
     if (activeAudioChatIdRef.current !== currentQueueChatIdRef.current) return;
     const next = getNextAudio(currentId);
     if (next?.url) {
-      handlePlayPause(next.url, next.label || 'Audio', next.id, activeAudioChatIdRef.current, false);
+      handlePlayPause(next.url, next.label || 'Ses', next.id, activeAudioChatIdRef.current, false);
     }
   };
 
@@ -439,7 +440,6 @@ const ChatDashboardInner: React.FC = () => {
       }
     }
 
-    // Pause previous audio if different
     if (activeAudioRef.current && activeAudioMsgRef.current && activeAudioMsgRef.current !== key) {
       activeAudioRef.current.pause();
       const prevKey = activeAudioMsgRef.current;
@@ -459,7 +459,6 @@ const ChatDashboardInner: React.FC = () => {
       activeAudioMsgRef.current = key;
       activeAudioMessageIdRef.current = messageId || null;
       activeAudioChatIdRef.current = chatId || selectedChatId || null;
-      // Queue snapshot faqat kontekst yangilash so'ralganda
       if (updateChatContext) {
         activeQueueRef.current = {
           chatId: activeAudioChatIdRef.current,
@@ -516,8 +515,7 @@ const ChatDashboardInner: React.FC = () => {
         if (messageId && activeAudioChatIdRef.current === currentQueueChatIdRef.current) {
           const next = getNextAudio(messageId);
           if (next?.url) {
-            // Play the next audio in the same chat playlist
-            setTimeout(() => handlePlayPause(next.url, next.label || 'Audio', next.id, activeAudioChatIdRef.current), 50);
+            setTimeout(() => handlePlayPause(next.url, next.label || 'Ses', next.id, activeAudioChatIdRef.current), 50);
           }
         }
       });
@@ -541,7 +539,7 @@ const ChatDashboardInner: React.FC = () => {
         })
         .catch(() => {
           setAudioLoading((prev) => ({ ...prev, [key]: false }));
-          setErrorMessage(`${label} ijro etib bo'lmadi`);
+          setErrorMessage(`${label} oynatılamadı`);
         });
     } else {
       audio.pause();
@@ -574,8 +572,8 @@ const ChatDashboardInner: React.FC = () => {
         <button
           type="button"
           className={`w-10 h-10 rounded-full ${accent === 'blue' ? 'bg-sky-500' : 'bg-emerald-500'} text-white flex items-center justify-center shadow-sm disabled:opacity-60`}
-          onClick={() => handlePlayPause(url, name || 'Audio', messageId, chatId)}
-          aria-label="Play audio"
+          onClick={() => handlePlayPause(url, name || 'Ses', messageId, chatId)}
+          aria-label="Sesi oynat"
           disabled={!url}
         >
           {loading ? <span className="w-4 h-4 border-2 border-white/70 border-t-transparent rounded-full animate-spin" /> : progress.playing ? <Pause size={18} /> : <Play size={18} />}
@@ -585,7 +583,7 @@ const ChatDashboardInner: React.FC = () => {
             <span className={cn("inline-flex items-center justify-center w-5 h-5 rounded-full", isDark ? "bg-slate-700 text-slate-200" : "bg-white/70 text-slate-600")}>
               <span className="text-[10px] font-semibold">в™Є</span>
             </span>
-            <span className="truncate">{name || 'Audio'}</span>
+            <span className="truncate">{name || 'Ses'}</span>
           </div>
           <div
             className={cn("h-2 rounded-full overflow-hidden mt-2 cursor-pointer", isDark ? "bg-slate-700" : "bg-white/70")}
@@ -623,8 +621,8 @@ const ChatDashboardInner: React.FC = () => {
         <button
           type="button"
           className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center"
-          onClick={() => handlePlayPause(url, name || 'Voice', messageId, chatId)}
-          aria-label="Play voice"
+          onClick={() => handlePlayPause(url, name || 'Sesli Mesaj', messageId, chatId)}
+          aria-label="Sesli mesajı oynat"
           disabled={!url}
         >
           {loading ? <span className="w-4 h-4 border-2 border-white/70 border-t-transparent rounded-full animate-spin" /> : progress.playing ? <Pause size={18} /> : <Play size={18} />}
@@ -634,7 +632,7 @@ const ChatDashboardInner: React.FC = () => {
             <div className={cn("w-6 h-6 rounded-full flex items-center justify-center", isDark ? "bg-slate-700 text-emerald-300" : "bg-white/80 text-emerald-600")}>
               <Mic size={14} />
             </div>
-            <div className="text-sm font-semibold">Voice message</div>
+            <div className="text-sm font-semibold">Sesli mesaj</div>
           </div>
           <div
             className={cn("h-2 rounded-full overflow-hidden mt-2 cursor-pointer relative", isDark ? "bg-slate-700" : "bg-white/70")}
@@ -691,14 +689,14 @@ const ChatDashboardInner: React.FC = () => {
   const otherTypingLabel = (() => {
     if (!isOtherTyping || !otherTypingType) return null;
     switch (otherTypingType) {
-      case 'WRITING_TEXT': return 'Yozmoqda';
-      case 'WRITING_VOICE': return 'Ovozli xabar yozmoqda';
-      case 'SENDING_VOICE': return 'Ovozli xabar yuborilmoqda';
-      case 'SENDING_AUDIO': return 'Audio yuborilmoqda';
-      case 'SENDING_VIDEO': return 'Video yuborilmoqda';
-      case 'SENDING_PHOTO': return 'Rasm yuborilmoqda';
-      case 'SENDING_FILE': return 'Fayl yuborilmoqda';
-      default: return 'Yozmoqda';
+      case 'WRITING_TEXT': return 'Yazıyor';
+      case 'WRITING_VOICE': return 'Sesli mesaj yazıyor';
+      case 'SENDING_VOICE': return 'Sesli mesaj gönderiliyor';
+      case 'SENDING_AUDIO': return 'Ses gönderiliyor';
+      case 'SENDING_VIDEO': return 'Video gönderiliyor';
+      case 'SENDING_PHOTO': return 'Fotoğraf gönderiliyor';
+      case 'SENDING_FILE': return 'Dosya gönderiliyor';
+      default: return 'Yazıyor';
     }
   })();
 
@@ -736,7 +734,7 @@ const ChatDashboardInner: React.FC = () => {
       .map((m) => ({
         id: m.messageId,
         url: m.attachmentUrl || '',
-        label: m.attachmentName || (m.type === 'VOICE' ? 'Voice' : 'Audio'),
+        label: m.attachmentName || (m.type === 'VOICE' ? 'Sesli Mesaj' : 'Ses'),
       }));
   }, [messagesData]);
   const audioQueueRef = useRef<typeof audioQueue>([]);
@@ -820,7 +818,7 @@ const ChatDashboardInner: React.FC = () => {
               chatId: payload.chatId,
               senderId: '',
               receiverId: '',
-              content: 'Chat tozalangan',
+              content: 'Sohbet temizlendi',
               createdAt: clearedAt,
               read: true,
               type: 'SYSTEM',
@@ -834,7 +832,7 @@ const ChatDashboardInner: React.FC = () => {
         return { chats: updated, totalUnread };
       });
       if (selectedChatId === payload.chatId && cleared) {
-        setToastMessage('Chat tozalandi');
+        setToastMessage('Sohbet temizlendi');
       }
     };
 
@@ -908,7 +906,7 @@ const ChatDashboardInner: React.FC = () => {
         if (!payload?.chatId) return;
         const wasOpen = selectedChatRef.current && getChatId(selectedChatRef.current) === payload.chatId;
         if (!wasOpen) {
-          console.log('Chat deleted event for non-open chat', payload);
+          console.log('Sohbet silme etkinliği, açık olmayan sohbet için', payload);
         }
         updateChatsCache((prevChats, totalUnread) => ({
           chats: prevChats.filter((c) => getChatId(c) !== payload.chatId),
@@ -917,7 +915,7 @@ const ChatDashboardInner: React.FC = () => {
         queryClient.removeQueries({ queryKey: ['messages', payload.chatId] });
         if (selectedChatRef.current && getChatId(selectedChatRef.current) === payload.chatId) {
           navigate('/chat', { replace: true });
-          setToastMessage('Chat deleted');
+          setToastMessage('Sohbet silindi');
         }
       },
       (payload) => {
@@ -953,7 +951,7 @@ const ChatDashboardInner: React.FC = () => {
   // Debug: log fetched messages for the selected chat
   useEffect(() => {
       if (selectedChatId !== null && messagesData) {
-        console.log('Messages fetched', messagesData);
+        console.log('Mesajlar alındı', messagesData);
       }
     }, [selectedChatId, messagesData]);
 
@@ -1120,7 +1118,7 @@ const ChatDashboardInner: React.FC = () => {
 
   const showSizeError = (fileName?: string) => {
     const namePart = fileName ? `${fileName} ` : '';
-    setErrorMessage(`${namePart}200 MB dan katta, yuborish mumkin emas.`);
+    setErrorMessage(`${namePart}200 MB'tan büyük, gönderilemez.`);
   };
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -1258,8 +1256,8 @@ const ChatDashboardInner: React.FC = () => {
           replyToMessageId: replyTo?.messageId || null,
           system: isSystemMessage,
         }).then(() => refreshChatsList()).catch((err) => {
-          console.error('Send message failed', err);
-          setErrorMessage('Xabar yuborilmadi');
+          console.error('Mesaj gönderme başarısız', err);
+          setErrorMessage('Mesaj gönderilemedi');
         });
       });
     }
@@ -1320,7 +1318,7 @@ const ChatDashboardInner: React.FC = () => {
     if (!targetId) return;
     try {
       const res = await messageService.deleteChat(targetId);
-      console.log('Delete chat response', res?.data ?? res);
+      console.log('Sohbet silme yanıtı', res?.data ?? res);
       const deletedBy = user?.id || otherUserId || 'unknown';
       sendChatDeletedEvent({ chatId: targetId, deletedBy, deletedAt: new Date().toISOString() });
       updateChatsCache((oldChats, totalUnread) => ({
@@ -1329,15 +1327,15 @@ const ChatDashboardInner: React.FC = () => {
       }));
       queryClient.removeQueries({ queryKey: ['messages', targetId] });
       refreshChatsList();
-      setToastMessage('Chat deleted');
+      setToastMessage('Sohbet silindi');
       if (selectedChatId === targetId) {
         navigate('/chat', { replace: true });
       }
     } catch (err: any) {
       const status = err?.response?.status;
-      if (status === 401) setErrorMessage('Chatni oвЂchirishga ruxsat yoвЂq (401)');
-      else if (status === 403) setErrorMessage('Chatni oвЂchira olmaysiz (403)');
-      else setErrorMessage('Chatni oвЂchirishda xatolik');
+      if (status === 401) setErrorMessage('Sohbeti silme izniniz yok (401)');
+      else if (status === 403) setErrorMessage('Sohbeti silemezsiniz (403)');
+      else setErrorMessage('Sohbet silinirken hata');
     } finally {
       setPendingDeleteChatId(null);
       setContextMenu(null);
@@ -1345,7 +1343,7 @@ const ChatDashboardInner: React.FC = () => {
   };
 
   const handleEditMessage = async (msg: Message) => {
-    const next = window.prompt("Xabarni tahrirlash:", msg.content || '');
+    const next = window.prompt("Mesajı düzenle:", msg.content || '');
     if (next === null || next === undefined) return;
     const trimmed = next.trim();
     try {
@@ -1364,13 +1362,13 @@ const ChatDashboardInner: React.FC = () => {
         });
         return { chats: updated, totalUnread };
       });
-      setToastMessage('Xabar tahrirlandi');
+      setToastMessage('Mesaj düzenlendi');
     } catch (err: any) {
       const status = err?.response?.status;
-      if (status === 401) setErrorMessage('Tahrir uchun ruxsat yoвЂq (401)');
-      else if (status === 403) setErrorMessage('Tahrir qilish mumkin emas (403)');
-      else if (status === 404) setErrorMessage('Xabar topilmadi (404)');
-      else setErrorMessage('Xabar tahririda xatolik');
+      if (status === 401) setErrorMessage('Düzenleme izniniz yok (401)');
+      else if (status === 403) setErrorMessage('Düzenleyemezsiniz (403)');
+      else if (status === 404) setErrorMessage('Mesaj bulunamadı (404)');
+      else setErrorMessage('Mesaj düzenlenirken hata');
     } finally {
       setMessageMenu(null);
     }
@@ -1396,7 +1394,7 @@ const ChatDashboardInner: React.FC = () => {
               chatId: msg.chatId,
               senderId: msg.senderId,
               receiverId: msg.receiverId,
-              content: 'Chat tozalangan',
+              content: 'Sohbet temizlendi',
               createdAt: clearedAt,
               read: true,
               type: 'SYSTEM',
@@ -1409,13 +1407,13 @@ const ChatDashboardInner: React.FC = () => {
         });
         return { chats: updated, totalUnread };
       });
-      setToastMessage(cleared ? 'Chat tozalandi' : "Xabar o'chirildi");
+      setToastMessage(cleared ? 'Sohbet temizlendi' : "Mesaj silindi");
     } catch (err: any) {
       const status = err?.response?.status;
-      if (status === 401) setErrorMessage("Xabarni o'chirishga ruxsat yo'q (401)");
-      else if (status === 403) setErrorMessage("Xabarni o'chira olmaysiz (403)");
-      else if (status === 404) setErrorMessage('Xabar topilmadi (404)');
-      else setErrorMessage("Xabarni o'chirishda xatolik");
+      if (status === 401) setErrorMessage("Mesajı silme izniniz yok (401)");
+      else if (status === 403) setErrorMessage("Mesajı silemezsiniz (403)");
+      else if (status === 404) setErrorMessage('Mesaj bulunamadı (404)');
+      else setErrorMessage("Mesaj silinirken hata");
     } finally {
       setMessageMenu(null);
     }
@@ -1498,7 +1496,7 @@ const ChatDashboardInner: React.FC = () => {
   const fileKey = (file: File) => `${file.name}-${file.size}-${file.lastModified}`;
 
   const formatPreviewText = (msg: Message | null | undefined) => {
-    if (!msg) return 'Xabar';
+    if (!msg) return 'Mesaj';
     const normalize = (t?: string | null) => (t || '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/g, '').trim();
     const safe = normalize(msg.content);
     if (safe) {
@@ -1507,12 +1505,12 @@ const ChatDashboardInner: React.FC = () => {
     }
     const label = (() => {
       switch (msg.type) {
-        case 'IMAGE': return '📷 Rasm';
+        case 'IMAGE': return '📷 Fotoğraf';
         case 'VIDEO': return '🎬 Video';
-        case 'AUDIO': return '🎵 Audio';
-        case 'VOICE': return '🎙️ Voice';
-        case 'FILE': return '📎 Fayl';
-        default: return 'Xabar';
+        case 'AUDIO': return '🎵 Ses';
+        case 'VOICE': return '🎙️ Sesli Mesaj';
+        case 'FILE': return '📎 Dosya';
+        default: return 'Mesaj';
       }
     })();
     if (msg.attachmentName) return `${label}: ${msg.attachmentName}`;
@@ -1526,7 +1524,7 @@ const ChatDashboardInner: React.FC = () => {
       const res = await authService.getUserByUsername(username);
       const target = res?.data?.data;
       if (!target?.id) {
-        setErrorMessage('Foydalanuvchi topilmadi');
+        setErrorMessage('Kullanıcı bulunamadı');
         return;
       }
       const existing = chats.find((c) => c.user1Id === target.id || c.user2Id === target.id);
@@ -1558,9 +1556,9 @@ const ChatDashboardInner: React.FC = () => {
       navigate(`/chat/${tempId}`);
     } catch (err: any) {
       const status = err?.response?.status;
-      if (status === 404) setErrorMessage('Foydalanuvchi topilmadi');
-      else if (status === 400) setErrorMessage('Username kiritilmadi');
-      else setErrorMessage('Havolani ochib bo‘lmadi');
+      if (status === 404) setErrorMessage('Kullanıcı bulunamadı');
+      else if (status === 400) setErrorMessage('Kullanıcı adı girilmedi');
+      else setErrorMessage('Bağlantı açılamadı');
     }
   };
 
@@ -1572,18 +1570,18 @@ const ChatDashboardInner: React.FC = () => {
   };
 
   const getMessagePreviewText = (msg: Message | null | undefined) => {
-    if (!msg) return 'Xabar';
+    if (!msg) return 'Mesaj';
     const normalize = (t?: string | null) => (t || '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/g, '').trim();
     const safeContent = normalize(msg.content);
     if (safeContent) return safeContent;
     const label = (() => {
       switch (msg.type) {
-        case 'IMAGE': return '🖼 Rasm';
+        case 'IMAGE': return '🖼 Fotoğraf';
         case 'VIDEO': return '🎥 Video';
-        case 'AUDIO': return '🎵 Audio';
-        case 'VOICE': return '🎤 Voice';
-        case 'FILE': return '📄 Fayl';
-        default: return 'Xabar';
+        case 'AUDIO': return '🎵 Ses';
+        case 'VOICE': return '🎤 Sesli Mesaj';
+        case 'FILE': return '📄 Dosya';
+        default: return 'Mesaj';
       }
     })();
     if (msg.attachmentName) return `${label}: ${msg.attachmentName}`;
@@ -1744,7 +1742,7 @@ const ChatDashboardInner: React.FC = () => {
         };
         tick();
       } catch (err) {
-        console.warn('Audio analyser init failed', err);
+        console.warn('Ses analizörü başlatılamadı', err);
       }
 
       recorder.ondataavailable = (e) => {
@@ -1770,7 +1768,7 @@ const ChatDashboardInner: React.FC = () => {
         if (!blob.size) return;
 
         const durationMs = Date.now() - recordStartRef.current;
-        const file = new File([blob], `voice-${Date.now()}.webm`, { type: blob.type });
+        const file = new File([blob], `sesli-mesaj-${Date.now()}.webm`, { type: blob.type });
 
         if (voiceSendAfterStopRef.current) {
           voiceSendAfterStopRef.current = false;
@@ -1784,7 +1782,7 @@ const ChatDashboardInner: React.FC = () => {
 
       recorder.start();
     } catch (err) {
-      console.error('Voice recording failed', err);
+      console.error('Ses kaydı başarısız', err);
       setIsRecording(false);
     }
   };
@@ -1983,7 +1981,7 @@ const ChatDashboardInner: React.FC = () => {
       className={cn("flex h-screen overflow-hidden", shellClass)}
       style={{ fontFamily: "'Inter', 'Inter var', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
     >
-      {/* Left Rail - Chats */}
+      {/* Sol Ray - Sohbetler */}
       <aside className={cn("w-full md:w-80 lg:w-96 border-r flex flex-col", isDark ? "bg-[#17212B] border-slate-800" : "bg-[#f3f8ff] border-slate-200")}>
         <header className={cn("p-4 border-b flex items-center justify-between", isDark ? "bg-[#17212B] border-slate-800" : "bg-white border-slate-200")}>
           <div className="flex items-center gap-3">
@@ -1992,7 +1990,7 @@ const ChatDashboardInner: React.FC = () => {
             </div>
             <div>
               <h2 className="font-bold text-slate-800 leading-none">{user?.firstname}</h2>
-              <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Online</span>
+              <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Çevrimiçi</span>
             </div>
           </div>
           <div className="flex gap-1">
@@ -2003,7 +2001,7 @@ const ChatDashboardInner: React.FC = () => {
             >
               {isDark ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            <button onClick={() => navigate('/profile')} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition-all">
+            <button onClick={() => setShowSettingsModal(true)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition-all">
               <Settings size={20} />
             </button>
             <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
@@ -2017,7 +2015,7 @@ const ChatDashboardInner: React.FC = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input
               type="text"
-              placeholder="Qidirish..."
+              placeholder="Ara..."
               className={cn(
                 "w-full pl-10 pr-4 py-2 rounded-xl text-sm placeholder:text-slate-400 focus:ring-2 focus:ring-sky-500 outline-none transition-all",
                 isDark ? "bg-slate-800 border border-slate-700 text-slate-100" : "bg-white border border-slate-200 text-slate-800"
@@ -2032,9 +2030,9 @@ const ChatDashboardInner: React.FC = () => {
                 isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-800"
               )}>
                 {searchLoading ? (
-                  <div className="p-3 text-xs text-slate-500">Qidirilmoqda...</div>
+                  <div className="p-3 text-xs text-slate-500">Aranıyor...</div>
                 ) : (searchResults?.length ?? 0) === 0 ? (
-                  <div className="p-3 text-xs text-slate-400">Hech narsa topilmadi</div>
+                  <div className="p-3 text-xs text-slate-400">Hiçbir şey bulunamadı</div>
                 ) : (
                   searchResults?.map((u) => {
                     const chatForUser = chats.find(c => c.user1Id === u.id || c.user2Id === u.id);
@@ -2086,9 +2084,9 @@ const ChatDashboardInner: React.FC = () => {
                           <span className={cn("text-[11px] truncate", isDark ? "text-slate-400" : "text-slate-500")}>@{u.username}</span>
                         </div>
                         {chatForUser ? (
-                          <span className={cn("ml-auto text-[10px] font-semibold", isDark ? "text-emerald-400" : "text-emerald-600")}>Suhbat</span>
+                          <span className={cn("ml-auto text-[10px] font-semibold", isDark ? "text-emerald-400" : "text-emerald-600")}>Sohbet</span>
                         ) : (
-                          <span className={cn("ml-auto text-[10px]", isDark ? "text-slate-500" : "text-slate-400")}>Topilmadi</span>
+                          <span className={cn("ml-auto text-[10px]", isDark ? "text-slate-500" : "text-slate-400")}>Bulunamadı</span>
                         )}
                       </button>
                     );
@@ -2101,7 +2099,7 @@ const ChatDashboardInner: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto px-2 space-y-1 pb-4">
           <div className="flex items-center justify-between px-4 py-2">
-            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Suhbatlar</h3>
+            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sohbetler</h3>
             {totalUnread > 0 && (
               <span className="text-[11px] font-semibold bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
                 {totalUnread}
@@ -2114,9 +2112,9 @@ const ChatDashboardInner: React.FC = () => {
                 onMouseLeave={() => setMessageMenu(null)}
               >
                 {[
-                  { label: 'Reply', icon: <Reply size={16} />, action: () => { setReplyTo(messageMenu.message); } },
-                  { label: 'Forward', icon: <ExternalLink size={16} />, action: () => setToastMessage('Forward not implemented') },
-                  { label: 'Download', icon: <ArrowDown size={16} />, action: async () => {
+                  { label: 'Yanıtla', icon: <Reply size={16} />, action: () => { setReplyTo(messageMenu.message); } },
+                  { label: 'İlet', icon: <ExternalLink size={16} />, action: () => setToastMessage('İletme uygulanmadı') },
+                  { label: 'İndir', icon: <ArrowDown size={16} />, action: async () => {
                       const msg = messageMenu.message;
                       if (!msg.messageId) return;
                       try {
@@ -2124,19 +2122,19 @@ const ChatDashboardInner: React.FC = () => {
                         const blobUrl = URL.createObjectURL(res.data);
                         const a = document.createElement('a');
                         a.href = blobUrl;
-                        a.download = msg.attachmentName || 'file';
+                        a.download = msg.attachmentName || 'dosya';
                         document.body.appendChild(a);
                         a.click();
                         a.remove();
                         URL.revokeObjectURL(blobUrl);
                       } catch (err: any) {
                         const status = err?.response?.status;
-                        if (status === 401 || status === 403) setErrorMessage('Ruxsat yoвЂq');
-                        else setErrorMessage('Fayl topilmadi yoki yuklab olishda xatolik');
+                        if (status === 401 || status === 403) setErrorMessage('İzin yok');
+                        else setErrorMessage('Dosya bulunamadı veya indirilirken hata');
                       }
                     } },
-                  canEditMessage(messageMenu.message) ? { label: 'Edit', icon: <Square size={16} />, action: () => handleEditMessage(messageMenu.message) } : null,
-                  { label: 'Delete', icon: <Trash2 size={16} />, action: () => handleDeleteMessage(messageMenu.message), danger: true },
+                  canEditMessage(messageMenu.message) ? { label: 'Düzenle', icon: <Square size={16} />, action: () => handleEditMessage(messageMenu.message) } : null,
+                  { label: 'Sil', icon: <Trash2 size={16} />, action: () => handleDeleteMessage(messageMenu.message), danger: true },
                 ].filter(Boolean).map((item: any, idx) => (
                   <button
                     key={item.label}
@@ -2170,7 +2168,7 @@ const ChatDashboardInner: React.FC = () => {
               </div>
             ))
           ) : chats.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-sm">Hali hech qanday suhbatlar yo'q</div>
+            <div className="p-8 text-center text-slate-400 text-sm">Henüz hiç sohbet yok</div>
           ) : chats.map((chat) => {
             const chatId = getChatId(chat);
             const otherId = chat.user1Id === user?.id ? chat.user2Id : chat.user1Id;
@@ -2178,10 +2176,10 @@ const ChatDashboardInner: React.FC = () => {
             const unread = chat.unreadCount || 0;
             const lastMsg = (chat as any).lastMessage as Message | undefined;
             const lastPreview = (() => {
-              if (!lastMsg) return "Xabar yo'q";
+              if (!lastMsg) return "Mesaj yok";
               const preview = formatPreviewText(lastMsg);
               const clipped = preview.length > 50 ? (preview.slice(0, 50) + "...") : preview;
-              if (lastMsg.replyToMessageId) return "Javob: " + clipped;
+              if (lastMsg.replyToMessageId) return "Yanıt: " + clipped;
               if (lastMsg.type === "SYSTEM" || lastMsg.system) return clipped;
               return clipped;
             })();
@@ -2242,7 +2240,7 @@ const ChatDashboardInner: React.FC = () => {
                 <div className="flex-1 text-left min-w-0">
                   <div className="flex justify-between items-center mb-1">
                     <h4 className={cn("font-bold text-sm truncate", selectedChatId === chatId ? (isDark ? "text-sky-300" : "text-sky-700") : (isDark ? "text-slate-100" : "text-slate-900"))}>
-                      {other?.firstname || (chat as any)?.otherUser?.firstname || `User #${otherId.slice(0, 8)}`}
+                      {other?.firstname || (chat as any)?.otherUser?.firstname || `Kullanıcı #${otherId.slice(0, 8)}`}
                     </h4>
                     <div className="flex items-center gap-2">
                       {unread > 0 && (
@@ -2269,7 +2267,7 @@ const ChatDashboardInner: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Chat Area */}
+      {/* Ana Sohbet Alanı */}
       <main className={cn("flex-1 flex flex-col relative", isDark ? "bg-[#0E1621]" : "bg-[#e5eef5]")}>
         {selectedChat ? (
           <>
@@ -2284,7 +2282,7 @@ const ChatDashboardInner: React.FC = () => {
                 </div>
                 <div>
                   <h2 className={cn("font-bold text-sm", isDark ? "text-slate-100" : "text-slate-900")}>
-                    {otherUserDisplay?.firstname || otherUserDisplay?.username || `User #${selectedChat.user1Id === user?.id ? selectedChat.user2Id.slice(0, 8) : selectedChat.user1Id.slice(0, 8)}`}
+                    {otherUserDisplay?.firstname || otherUserDisplay?.username || `Kullanıcı #${selectedChat.user1Id === user?.id ? selectedChat.user2Id.slice(0, 8) : selectedChat.user1Id.slice(0, 8)}`}
                   </h2>
                   {isOtherTyping ? (
                     <span className={cn("text-[10px] font-semibold flex items-center gap-1",
@@ -2295,17 +2293,17 @@ const ChatDashboardInner: React.FC = () => {
                         otherTypingType && otherTypingType.startsWith('SENDING')
                           ? (isDark ? "bg-amber-300" : "bg-amber-500")
                           : (isDark ? "bg-sky-300" : "bg-sky-500"))} />
-                      {(otherTypingLabel || 'Yozmoqda') + '...'}
+                      {(otherTypingLabel || 'Yazıyor') + '...'}
                     </span>
                   ) : otherUserDisplay?.online ? (
                     <span className="text-[10px] font-semibold flex items-center gap-1 text-[#4BB34B]">
-                      <span className="w-2 h-2 rounded-full bg-[#4BB34B] animate-pulse" /> Online
+                      <span className="w-2 h-2 rounded-full bg-[#4BB34B] animate-pulse" /> Çevrimiçi
                     </span>
                   ) : (
                     otherUserDisplay?.lastOnline && (
                       <span className="text-[10px] text-slate-400 flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-slate-500" />
-                        So'nggi faollik: {formatLastSeen(otherUserDisplay.lastOnline)}
+                        Son görülme: {formatLastSeen(otherUserDisplay.lastOnline)}
                       </span>
                     )
                   )}
@@ -2314,7 +2312,7 @@ const ChatDashboardInner: React.FC = () => {
             <div className="flex items-center gap-2 text-slate-500">
               <button className="p-2 hover:text-sky-600"><Phone size={20} /></button>
               <button className="p-2 hover:text-sky-600"><Video size={20} /></button>
-              <button className="p-2 hover:text-red-500" onClick={handleDeleteChat} title="Chatni oвЂchirish">
+              <button className="p-2 hover:text-red-500" onClick={handleDeleteChat} title="Sohbeti sil">
                 <MoreVertical size={20} />
               </button>
             </div>
@@ -2324,8 +2322,8 @@ const ChatDashboardInner: React.FC = () => {
               <div className={cn("flex items-center gap-2 text-sm", isDark ? "text-slate-100" : "text-slate-700")}>
                 <Pin size={16} className={isDark ? "text-sky-400" : "text-sky-500"} />
                 <div>
-                  <div className="font-semibold">Sabitlenen xabar</div>
-                  <div className={cn("text-xs truncate", isDark ? "text-slate-400" : "text-slate-500")}>Chatni kuzatish uchun pinlangan ma'lumot.</div>
+                  <div className="font-semibold">Sabitlenmiş mesaj</div>
+                  <div className={cn("text-xs truncate", isDark ? "text-slate-400" : "text-slate-500")}>Sohbeti izlemek için sabitlenmiş bilgi.</div>
                 </div>
               </div>
             </div>
@@ -2366,14 +2364,14 @@ const ChatDashboardInner: React.FC = () => {
                             activeAudioChatIdRef.current !== currentQueueChatIdRef.current ||
                             !getPrevAudio(activeAudioMessageIdRef.current || '')
                           }
-                          aria-label="Oldingi audio"
+                          aria-label="Önceki ses"
                         >
                           <SkipBack size={16} />
                         </button>
                         <button
                           type="button"
                           className="w-12 h-12 rounded-full bg-sky-500 text-white flex items-center justify-center shadow-md hover:bg-sky-600 active:scale-[0.98] transition-all"
-                          onClick={() => handlePlayPause(activeAudioMeta.url, activeAudioMeta.label || 'Audio', activeAudioMeta.messageId || undefined)}
+                          onClick={() => handlePlayPause(activeAudioMeta.url, activeAudioMeta.label || 'Ses', activeAudioMeta.messageId || undefined)}
                         >
                           {audioProgress[activeAudioMeta.url]?.playing ? <Pause size={20} /> : <Play size={20} />}
                         </button>
@@ -2390,7 +2388,7 @@ const ChatDashboardInner: React.FC = () => {
                             activeAudioChatIdRef.current !== currentQueueChatIdRef.current ||
                             !getNextAudio(activeAudioMessageIdRef.current || '')
                           }
-                          aria-label="Keyingi audio"
+                          aria-label="Sonraki ses"
                         >
                           <SkipForward size={16} />
                         </button>
@@ -2398,7 +2396,7 @@ const ChatDashboardInner: React.FC = () => {
 
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className={cn("text-sm font-semibold truncate", isDark ? "text-slate-50" : "text-slate-800")} title={activeAudioMeta.label || undefined}>
-                          {activeAudioMeta.label || 'Audio'}
+                          {activeAudioMeta.label || 'Ses'}
                         </div>
                         <div className="flex items-center gap-2 text-[11px]">
                           <span className={isDark ? "text-slate-300" : "text-slate-600"}>{formatDuration((audioProgress[activeAudioMeta.url]?.current || 0) * 1000)}</span>
@@ -2423,7 +2421,7 @@ const ChatDashboardInner: React.FC = () => {
                             isDark ? "text-slate-300 hover:text-sky-200 hover:bg-slate-800" : "text-slate-500 hover:text-sky-600 hover:bg-slate-100"
                           )}
                           onClick={() => setShowPlayerQueue((v) => !v)}
-                          aria-label="Ro'yxatni ko'rish"
+                          aria-label="Listeyi gör"
                         >
                           <ListMusic size={16} />
                         </button>
@@ -2434,7 +2432,7 @@ const ChatDashboardInner: React.FC = () => {
                             isDark ? "text-slate-400 hover:text-red-400 hover:bg-slate-800" : "text-slate-400 hover:text-red-500 hover:bg-slate-100"
                           )}
                           onClick={stopActiveAudio}
-                          aria-label="Playerni yopish"
+                          aria-label="Oynatıcıyı kapat"
                         >
                           <X size={16} />
                         </button>
@@ -2457,16 +2455,16 @@ const ChatDashboardInner: React.FC = () => {
                                     ? (isDark ? "bg-sky-900/40 text-sky-100" : "bg-sky-50 text-sky-800")
                                     : (isDark ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-50")
                                 )}
-                                onClick={() => handlePlayPause(item.url, item.label || 'Audio', item.id, activeAudioChatIdRef.current, false)}
+                                onClick={() => handlePlayPause(item.url, item.label || 'Ses', item.id, activeAudioChatIdRef.current, false)}
                               >
                                 <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-600 flex items-center justify-center text-[10px] font-semibold">
-                                  {item.label?.slice(0, 2)?.toUpperCase() || 'AU'}
+                                  {item.label?.slice(0, 2)?.toUpperCase() || 'SE'}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-semibold truncate">{item.label || 'Audio'}</div>
+                                  <div className="text-sm font-semibold truncate">{item.label || 'Ses'}</div>
                                 </div>
                                 {isActive ? (
-                                  <span className="text-[11px] text-sky-500 font-semibold">Now</span>
+                                  <span className="text-[11px] text-sky-500 font-semibold">Şimdi</span>
                                 ) : null}
                               </button>
                             );
@@ -2499,7 +2497,7 @@ const ChatDashboardInner: React.FC = () => {
                         <div className={cn("mb-2 w-full max-w-[75%] rounded-xl px-3 py-2 text-[12px] shadow-sm flex gap-2 items-start", isDark ? "border border-slate-700 bg-slate-800 text-slate-100" : "border border-slate-200 bg-white/80 text-slate-700")}>
                           <span className="w-[3px] rounded-full bg-sky-400 mt-0.5" aria-hidden />
                           <div className="flex-1 min-w-0">
-                            <div className={cn("text-[11px] font-semibold mb-1", isDark ? "text-slate-300" : "text-slate-500")}>Javob</div>
+                            <div className={cn("text-[11px] font-semibold mb-1", isDark ? "text-slate-300" : "text-slate-500")}>Yanıt</div>
                             <div className={cn("text-[11px] font-medium truncate", isDark ? "text-slate-200" : "text-slate-600")}>
                               {formatPreviewText(replyTarget)}
                             </div>
@@ -2560,7 +2558,7 @@ const ChatDashboardInner: React.FC = () => {
                                   <div key={idx}>
                                     {renderAudioBubble(
                                       att.url,
-                                      att.name || 'Audio',
+                                      att.name || 'Ses',
                                       att.size,
                                       att.durationSeconds ? att.durationSeconds * 1000 : msg.attachmentDurationMs,
                                       'green',
@@ -2580,11 +2578,11 @@ const ChatDashboardInner: React.FC = () => {
                               return (
                                 <div key={idx} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-[#eef8ea] px-3 py-2 shadow-sm">
                                   <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center uppercase text-xs font-bold">
-                                    {(att.name || 'file').split('.').pop()?.slice(0, 3) || 'file'}
+                                    {(att.name || 'dosya').split('.').pop()?.slice(0, 3) || 'dosya'}
                                   </div>
                                   <div className="flex flex-col min-w-0">
                                     <a href={att.url} target="_blank" rel="noreferrer" className="text-sm font-semibold text-slate-800 truncate">
-                                      {att.name || 'Fayl'}
+                                      {att.name || 'Dosya'}
                                     </a>
                                     {att.size ? (
                                       <span className="text-xs text-emerald-600 font-semibold">{formatBytes(att.size)}</span>
@@ -2607,7 +2605,7 @@ const ChatDashboardInner: React.FC = () => {
                               msg.type === 'AUDIO' ? (
                                 renderAudioBubble(
                                   msg.attachmentUrl || '',
-                                  msg.attachmentName || 'Audio',
+                                  msg.attachmentName || 'Ses',
                                   msg.attachmentSize,
                                   msg.attachmentDurationMs,
                                   'blue',
@@ -2628,11 +2626,11 @@ const ChatDashboardInner: React.FC = () => {
                                     (
                                       <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-[#eef8ea] px-3 py-2 shadow-sm">
                                         <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-sky-500 to-blue-700 text-white flex items-center justify-center uppercase text-xs font-bold">
-                                          {(msg.attachmentName || 'file').split('.').pop()?.slice(0, 3) || 'file'}
+                                          {(msg.attachmentName || 'dosya').split('.').pop()?.slice(0, 3) || 'dosya'}
                                         </div>
                                         <div className="flex flex-col min-w-0">
                                           <a href={msg.attachmentUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-slate-800 truncate">
-                                            {msg.attachmentName || 'Fayl'}
+                                            {msg.attachmentName || 'Dosya'}
                                           </a>
                                           {msg.attachmentSize ? (
                                             <span className="text-xs text-emerald-600 font-semibold">{formatBytes(msg.attachmentSize)}</span>
@@ -2646,15 +2644,15 @@ const ChatDashboardInner: React.FC = () => {
                             ) : null}
                           </div>
                         ) : null}
-                        {isReplying && <div className="text-[10px] text-emerald-300">Tanlangan javob</div>}
+                        {isReplying && <div className="text-[10px] text-emerald-300">Seçilen yanıt</div>}
                 {progress && (
                           <div className="flex items-center gap-3 text-[11px] text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 w-full max-w-xs">
                             <div className="w-9 h-9 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-[11px] font-bold uppercase">
-                              {(msg.attachmentName || progress.name || 'UP').split('.').pop()?.slice(0, 3) || 'UP'}
+                              {(msg.attachmentName || progress.name || 'YUK').split('.').pop()?.slice(0, 3) || 'YUK'}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="text-[11px] font-semibold text-slate-700 truncate">
-                                {msg.attachmentName || progress.name || 'Yuklanmoqda...'}
+                                {msg.attachmentName || progress.name || 'Yükleniyor...'}
                               </div>
                               <div className="text-[10px] text-slate-500">
                                 {progress.loaded !== undefined && progress.total
@@ -2680,13 +2678,13 @@ const ChatDashboardInner: React.FC = () => {
                           )}
                           <span>{formatTime(msg.createdAt)}</span>
                         </div>
-                        {isEdited && <span className="text-[9px] text-slate-500">(dГјzenlendi)</span>}
+                        {isEdited && <span className="text-[9px] text-slate-500">(düzenlendi)</span>}
                         {isMe && canEditMessage(msg) && (
                           <button
                             type="button"
                             className={cn("text-slate-400 hover:text-slate-700 transition-colors", "opacity-0 group-hover:opacity-100")}
                             onClick={() => handleEditMessage(msg)}
-                            title="Xabarni tahrirlash"
+                            title="Mesajı düzenle"
                           >
                             <Square size={12} />
                           </button>
@@ -2703,7 +2701,7 @@ const ChatDashboardInner: React.FC = () => {
                   if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
                 }}
                 className="absolute right-8 bottom-24 w-10 h-10 rounded-full bg-white shadow-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:text-sky-600"
-                title="Pastga o'tish"
+                title="Aşağı git"
               >
                 <ArrowDown size={18} />
               </button>
@@ -2725,13 +2723,13 @@ const ChatDashboardInner: React.FC = () => {
                 onMouseLeave={() => setContextMenu(null)}
               >
                 {[
-                  { label: 'Open in New Tab', icon: <ExternalLink size={16} />, action: () => { if (contextMenu?.chatId) navigate(`/chat/${contextMenu.chatId}`); } },
-                  { label: 'Quick Preview', icon: <Eye size={16} />, action: () => setToastMessage('Preview not implemented') },
-                  { label: 'Add to Folder', icon: <Folder size={16} />, action: () => setToastMessage('Folder not implemented') },
-                  { label: 'Mark as Unread', icon: <CircleDot size={16} />, action: () => setToastMessage('Marked as unread (local)') },
-                  { label: 'Pin to Top', icon: <Pin size={16} />, action: () => setToastMessage('Pinned (local)') },
-                  { label: 'Unmute', icon: <BellOff size={16} />, action: () => setToastMessage('Unmuted (local)') },
-                  { label: 'Delete Chat', icon: <Trash2 size={16} />, action: () => handleDeleteChat(contextMenu?.chatId), danger: true },
+                  { label: 'Yeni Sekmede Aç', icon: <ExternalLink size={16} />, action: () => { if (contextMenu?.chatId) navigate(`/chat/${contextMenu.chatId}`); } },
+                  { label: 'Hızlı Önizleme', icon: <Eye size={16} />, action: () => setToastMessage('Önizleme uygulanmadı') },
+                  { label: 'Klasöre Ekle', icon: <Folder size={16} />, action: () => setToastMessage('Klasör uygulanmadı') },
+                  { label: 'Okunmamış Olarak İşaretle', icon: <CircleDot size={16} />, action: () => setToastMessage('Okunmamış olarak işaretlendi (yerel)') },
+                  { label: 'Üste Sabitle', icon: <Pin size={16} />, action: () => setToastMessage('Sabitlendi (yerel)') },
+                  { label: 'Sessizden Çıkar', icon: <BellOff size={16} />, action: () => setToastMessage('Sessizden çıkarıldı (yerel)') },
+                  { label: 'Sohbeti Sil', icon: <Trash2 size={16} />, action: () => handleDeleteChat(contextMenu?.chatId), danger: true },
                 ].map((item, idx) => (
                   <button
                     key={item.label}
@@ -2757,10 +2755,10 @@ const ChatDashboardInner: React.FC = () => {
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
                 <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm">
                   <div className="px-5 py-4 border-b border-slate-200">
-                    <h3 className="text-base font-semibold text-slate-900">Chatni oвЂchirish</h3>
+                    <h3 className="text-base font-semibold text-slate-900">Sohbeti sil</h3>
                   </div>
                   <div className="px-5 py-4 text-sm text-slate-700">
-                    Chatni oвЂchirib tashlamoqchimisiz? Barcha xabarlar ham oвЂchiriladi.
+                    Sohbeti silmek istediğinizden emin misiniz? Tüm mesajlar da silinecek.
                   </div>
                   <div className="flex justify-end gap-2 px-5 py-3 border-t border-slate-200 bg-slate-50">
                     <button
@@ -2768,14 +2766,14 @@ const ChatDashboardInner: React.FC = () => {
                       className="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100"
                       onClick={() => setPendingDeleteChatId(null)}
                     >
-                      Bekor qilish
+                      İptal
                     </button>
                     <button
                       type="button"
                       className="px-4 py-2 rounded-lg text-sm text-white bg-red-500 hover:bg-red-600"
                       onClick={() => confirmDeleteChat()}
                     >
-                      OвЂchirish
+                      Sil
                     </button>
                   </div>
                 </div>
@@ -2789,7 +2787,7 @@ const ChatDashboardInner: React.FC = () => {
                   <div className="relative flex items-center gap-2 bg-slate-100 text-xs text-slate-600 px-3 py-2 rounded-t-2xl">
                     <span className="absolute left-1 top-1 bottom-1 w-[3px] rounded-full bg-sky-400" aria-hidden />
                     <div className="ml-3 flex-1 truncate">
-                      <span className="text-slate-500">↩ Javob:</span>{' '}
+                      <span className="text-slate-500">↩ Yanıt:</span>{' '}
                       <span className="font-semibold truncate inline-block max-w-full">
                         {(() => {
                           const prev = formatPreviewText(replyTo);
@@ -2801,7 +2799,7 @@ const ChatDashboardInner: React.FC = () => {
                       type="button"
                       onClick={() => { setReplyTo(null); setMessageInput(''); }}
                       className="text-slate-400 hover:text-red-500 hover:bg-white/60 rounded-full p-1 transition-colors"
-                      title="Javobni bekor qilish"
+                      title="Yanıtı iptal et"
                     >
                       <X size={14} />
                     </button>
@@ -2823,7 +2821,7 @@ const ChatDashboardInner: React.FC = () => {
                     </label>
                     <textarea
                       ref={messageInputRef}
-                      placeholder="Message"
+                      placeholder="Mesaj"
                       rows={1}
                       className="flex-1 bg-transparent border border-slate-200 rounded-full shadow-sm focus:ring-0 outline-none text-sm text-slate-800 px-3 py-2 placeholder:text-slate-400 resize-none"
                       value={messageInput}
@@ -2840,7 +2838,7 @@ const ChatDashboardInner: React.FC = () => {
                         type="button"
                         onClick={pauseRecording}
                         className="w-10 h-10 rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 shadow-sm flex items-center justify-center"
-                        title={isPausedRecording ? "Davom ettirish" : "Pauza"}
+                        title={isPausedRecording ? "Devam et" : "Duraklat"}
                       >
                         {isPausedRecording ? <Play size={18} /> : <Pause size={18} />}
                       </button>
@@ -2848,7 +2846,7 @@ const ChatDashboardInner: React.FC = () => {
                         type="button"
                         onClick={cancelRecording}
                         className="w-10 h-10 rounded-full border border-red-100 bg-white text-red-500 hover:bg-red-50 shadow-sm flex items-center justify-center"
-                        title="Voice yozuvni bekor qilish"
+                        title="Ses kaydını iptal et"
                       >
                         <Trash2 size={18} />
                       </button>
@@ -2860,7 +2858,7 @@ const ChatDashboardInner: React.FC = () => {
                           stopRecording();
                         }}
                         className="w-10 h-10 rounded-full bg-sky-500 text-white hover:bg-sky-600 shadow-sm flex items-center justify-center"
-                        title="Voice yuborish (Caption sifatida matn jo'natiladi)"
+                        title="Ses gönder (açıklama olarak metin gönderilir)"
                       >
                         <Send size={18} />
                       </button>
@@ -2874,16 +2872,16 @@ const ChatDashboardInner: React.FC = () => {
                         value={voiceCaption}
                         onChange={(e) => setVoiceCaption(e.target.value.slice(0, MAX_MESSAGE_LEN))}
                         className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-sky-500"
-                        placeholder="Izoh qo'shish..."
+                        placeholder="Açıklama ekle..."
                       />
                     </div>
                     <div className="flex flex-col items-center gap-2 text-xs text-slate-500 w-16">
-                      <span>{(voiceDraft.durationMs / 1000).toFixed(1)} s</span>
+                      <span>{(voiceDraft.durationMs / 1000).toFixed(1)} sn</span>
                       <button
                         type="button"
                         onClick={cancelVoiceDraft}
                         className="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-lg"
-                        title="Bekor qilish"
+                        title="İptal"
                       >
                         <Trash2 size={18} />
                       </button>
@@ -2891,9 +2889,9 @@ const ChatDashboardInner: React.FC = () => {
                         type="button"
                         onClick={sendVoiceDraft}
                         className="text-white bg-sky-500 hover:bg-sky-600 px-3 py-2 rounded-lg text-sm font-semibold shadow"
-                        title="Yuborish"
+                        title="Gönder"
                       >
-                        Yuborish
+                        Gönder
                       </button>
                     </div>
                   </div>
@@ -2913,7 +2911,7 @@ const ChatDashboardInner: React.FC = () => {
                                 type="button"
                                 onClick={remove}
                                 className="absolute -right-2 -top-2 w-7 h-7 rounded-full bg-white border border-slate-200 shadow flex items-center justify-center text-slate-500 hover:text-red-500"
-                                aria-label="Remove attachment"
+                                aria-label="Ek dosyayı kaldır"
                               >
                                 <X size={14} />
                               </button>
@@ -2944,7 +2942,7 @@ const ChatDashboardInner: React.FC = () => {
                               ) : (
                                 <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 shadow-sm">
                                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-sky-500 to-blue-700 text-white flex items-center justify-center uppercase text-xs font-bold">
-                                    {(file.name || 'file').split('.').pop()?.slice(0, 3) || 'file'}
+                                    {(file.name || 'dosya').split('.').pop()?.slice(0, 3) || 'dosya'}
                                   </div>
                                   <div className="flex flex-col min-w-0">
                                     <span className="text-sm font-semibold text-slate-800 truncate">{file.name}</span>
@@ -2966,14 +2964,14 @@ const ChatDashboardInner: React.FC = () => {
                           otherTypingType && otherTypingType.startsWith('SENDING')
                             ? (isDark ? "bg-amber-300" : "bg-amber-500")
                             : (isDark ? "bg-sky-300" : "bg-sky-500"))} />
-                        {otherTypingLabel ? `${otherTypingLabel}...` : "Yozmoqda..."}
+                        {otherTypingLabel ? `${otherTypingLabel}...` : "Yazıyor..."}
                       </div>
                     )}
                     {voiceSending && (
                       <div className={cn("flex items-center gap-2 text-xs px-3 py-1 rounded-full self-start",
                         isDark ? "text-amber-200 bg-amber-900/30 border border-amber-800" : "text-amber-700 bg-amber-50 border border-amber-100")}>
                         <span className={cn("w-2 h-2 rounded-full animate-pulse", isDark ? "bg-amber-300" : "bg-amber-500")} />
-                        Ovozli xabar yuborilmoqda...
+                        Sesli mesaj gönderiliyor...
                       </div>
                     )}
                     <form onSubmit={handleSendMessage} className={cn("flex items-end gap-3 px-4 py-3 border rounded-2xl shadow-sm transition-colors", isDark ? "bg-[#0f172a] border-slate-800" : "bg-white border-slate-200", replyTo ? "ring-1 ring-sky-400/50" : "")}>
@@ -2991,7 +2989,7 @@ const ChatDashboardInner: React.FC = () => {
                         <div className="relative flex-1 flex items-end">
                           <textarea
                             ref={messageInputRef}
-                            placeholder="Bir mesaj yazin..."
+                            placeholder="Bir mesaj yazın..."
                             rows={1}
                             className={cn("w-full bg-transparent border rounded-xl outline-none text-sm px-3 py-2 placeholder:text-slate-500 resize-none transition-shadow",
                               isDark ? "border-slate-700 text-slate-100 focus:ring-1 focus:ring-sky-400 focus:border-sky-500" : "border-slate-200 text-slate-800 focus:ring-1 focus:ring-sky-400 focus:border-sky-400")}
@@ -3039,7 +3037,7 @@ const ChatDashboardInner: React.FC = () => {
                           type="button"
                           onClick={startRecording}
                           className={cn("w-11 h-11 rounded-full shadow-sm flex items-center justify-center transition-colors", isDark ? "bg-slate-800 text-slate-300 hover:bg-slate-700" : "bg-slate-100 text-slate-500 hover:bg-slate-200")}
-                          title="Voice yozib olish"
+                          title="Ses kaydet"
                         >
                           <Mic size={18} />
                         </button>
@@ -3048,7 +3046,7 @@ const ChatDashboardInner: React.FC = () => {
                           type="submit"
                           disabled={!messageInput.trim() && attachments.length === 0}
                           className={cn("w-11 h-11 text-white rounded-full flex items-center justify-center transition-all disabled:opacity-50 disabled:shadow-none", isDark ? "bg-sky-600 hover:bg-sky-500 shadow-lg shadow-sky-900/40" : "bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-200")}
-                          title="Yuborish"
+                          title="Gönder"
                         >
                           <Send size={18} />
                         </button>
@@ -3065,13 +3063,13 @@ const ChatDashboardInner: React.FC = () => {
             <div className="w-24 h-24 bg-indigo-50 text-indigo-200 rounded-full flex items-center justify-center mb-6">
               <UserIcon size={48} />
             </div>
-            <h2 className="text-xl font-bold text-slate-800 mb-2">Suhbatni boshlang</h2>
-            <p className="max-w-xs text-sm">Chap tomondagi ro'yxatdan birorta foydalanuvchini tanlang va xabar almashishni boshlang.</p>
+            <h2 className="text-xl font-bold text-slate-800 mb-2">Sohbet başlatın</h2>
+            <p className="max-w-xs text-sm">Soldaki listeden bir kullanıcı seçin ve mesajlaşmaya başlayın.</p>
           </div>
         )}
       </main>
 
-      {/* Right Panel - Profile */}
+      {/* Sağ Panel - Profil */}
       {selectedChat ? (
         <aside className={cn("hidden lg:flex w-80 flex-col border-l p-4", isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900")}>
           <div className={cn("flex flex-col items-center gap-2 pb-4 border-b", isDark ? "border-slate-800" : "border-slate-200")}>
@@ -3079,11 +3077,11 @@ const ChatDashboardInner: React.FC = () => {
               {otherUserDisplay?.avatarUrl ? (
                 <img src={otherUserDisplay.avatarUrl} alt={otherUserDisplay?.username} className="w-full h-full object-cover" />
               ) : (
-                (otherUserDisplay?.firstname?.[0] || selectedChatId?.[0] || 'U')
+                (otherUserDisplay?.firstname?.[0] || selectedChatId?.[0] || 'K')
               )}
             </div>
             <div className={cn("text-lg font-semibold", isDark ? "text-slate-50" : "text-slate-900")}>
-              {otherUserDisplay?.firstname || otherUserDisplay?.username || 'Foydalanuvchi'}
+              {otherUserDisplay?.firstname || otherUserDisplay?.username || 'Kullanıcı'}
             </div>
             <div className={cn("text-xs", isDark ? "text-slate-400" : "text-slate-500")}>
               {otherUserDisplay?.username ? `@${otherUserDisplay.username}` : ''}
@@ -3093,7 +3091,7 @@ const ChatDashboardInner: React.FC = () => {
                 <span className={cn("inline-flex items-center gap-1 font-semibold px-2 py-1 rounded-full border",
                   isDark ? "text-emerald-300 bg-emerald-900/30 border-emerald-800" : "text-emerald-500 bg-emerald-50 border-emerald-100")}>
                   <span className={cn("w-2 h-2 rounded-full animate-pulse", isDark ? "bg-emerald-300" : "bg-emerald-500")} />
-                  Online
+                  Çevrimiçi
                 </span>
               ) : otherUserDisplay?.lastOnline ? (
                 <span className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-full border",
@@ -3105,9 +3103,9 @@ const ChatDashboardInner: React.FC = () => {
             </div>
             <div className="flex gap-2">
               <button className={cn("px-3 py-1 rounded-full text-xs transition-colors",
-                isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-slate-100 text-slate-700")}>Xabar</button>
+                isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-slate-100 text-slate-700")}>Mesaj</button>
               <button className={cn("px-3 py-1 rounded-full text-xs transition-colors",
-                isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-slate-100 text-slate-700")}>Sesi</button>
+                isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-slate-100 text-slate-700")}>Ses</button>
               <button className={cn("px-3 py-1 rounded-full text-xs transition-colors",
                 isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-slate-100 text-slate-700")}>Hediye</button>
             </div>
@@ -3115,35 +3113,35 @@ const ChatDashboardInner: React.FC = () => {
 
           <div className="mt-4 space-y-3 text-sm">
             <div className={cn("flex justify-between", isDark ? "text-slate-300" : "text-slate-600")}>
-              <span>Ism</span><span>{otherUserDisplay?.firstname || '-'}</span>
+              <span>Ad</span><span>{otherUserDisplay?.firstname || '-'}</span>
             </div>
             <div className={cn("flex justify-between", isDark ? "text-slate-300" : "text-slate-600")}>
-              <span>Familiya</span><span>{otherUserDisplay?.lastname || '-'}</span>
+              <span>Soyad</span><span>{otherUserDisplay?.lastname || '-'}</span>
             </div>
             {otherUserDisplay?.email && (
               <div className={cn("flex justify-between", isDark ? "text-slate-300" : "text-slate-600")}>
-                <span>Email</span><span className="truncate max-w-[140px]">{otherUserDisplay.email}</span>
+                <span>E-posta</span><span className="truncate max-w-[140px]">{otherUserDisplay.email}</span>
               </div>
             )}
             {otherUserDisplay?.role && (
               <div className={cn("flex justify-between", isDark ? "text-slate-300" : "text-slate-600")}>
-                <span>Role</span><span>{otherUserDisplay.role}</span>
+                <span>Rol</span><span>{otherUserDisplay.role}</span>
               </div>
             )}
             {!otherUserDisplay?.online && otherUserDisplay?.lastOnline && (
               <div className={cn("flex justify-between", isDark ? "text-slate-300" : "text-slate-600")}>
-                <span>Oxirgi marta</span><span className="truncate max-w-[140px]">{formatTime(otherUserDisplay.lastOnline || '')}</span>
+                <span>Son görülme</span><span className="truncate max-w-[140px]">{formatTime(otherUserDisplay.lastOnline || '')}</span>
               </div>
             )}
             {otherUserDisplay?.birthDate && (
               <div className={cn("flex justify-between", isDark ? "text-slate-300" : "text-slate-600")}>
-                <span>Tug'ilgan sana</span><span>{otherUserDisplay.birthDate}</span>
+                <span>Doğum tarihi</span><span>{otherUserDisplay.birthDate}</span>
               </div>
             )}
 
             {otherUserDisplay?.socialLinks && Object.values(otherUserDisplay.socialLinks).some(Boolean) && (
               <details className={cn("space-y-2 border rounded-lg px-3 py-2", isDark ? "text-slate-200 bg-slate-900 border-slate-800" : "text-slate-600 bg-slate-50 border-slate-200")}>
-                <summary className={cn("cursor-pointer font-semibold", isDark ? "text-slate-100" : "text-slate-700")}>Ijtimoiy tarmoqlar</summary>
+                <summary className={cn("cursor-pointer font-semibold", isDark ? "text-slate-100" : "text-slate-700")}>Sosyal medya</summary>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   {Object.entries(otherUserDisplay.socialLinks).map(([k, v]) => (
                     v ? (
@@ -3167,31 +3165,80 @@ const ChatDashboardInner: React.FC = () => {
           </div>
 
           <div className="mt-6 text-sm">
-            <div className="font-semibold text-slate-700 mb-2">Media</div>
+            <div className="font-semibold text-slate-700 mb-2">Medya</div>
             <div className="flex gap-2">
-              <button className="flex-1 px-3 py-2 border border-slate-200 rounded-lg hover:border-sky-500">Rasmlar</button>
+              <button className="flex-1 px-3 py-2 border border-slate-200 rounded-lg hover:border-sky-500">Fotoğraflar</button>
               <button className="flex-1 px-3 py-2 border border-slate-200 rounded-lg hover:border-sky-500">Videolar</button>
-              <button className="flex-1 px-3 py-2 border border-slate-200 rounded-lg hover:border-sky-500">Fayllar</button>
+              <button className="flex-1 px-3 py-2 border border-slate-200 rounded-lg hover:border-sky-500">Dosyalar</button>
             </div>
             <div className="mt-3 h-32 border border-slate-200 rounded-lg bg-slate-50 text-slate-500 text-xs flex flex-col items-center justify-center gap-2">
               <Folder size={20} className="text-slate-400" />
-              <div className="text-xs font-medium text-slate-500">Media topilmadi</div>
-              <div className="text-[11px] text-slate-400">Fayllar shu yerda paydo bo‘ladi</div>
+              <div className="text-xs font-medium text-slate-500">Medya bulunamadı</div>
+              <div className="text-[11px] text-slate-400">Dosyalar burada görünecek</div>
             </div>
           </div>
 
-          <button className="mt-auto text-left text-red-500 text-sm hover:text-red-400">Foydalanuvchini bloklash</button>
+          <button className="mt-auto text-left text-red-500 text-sm hover:text-red-400">Kullanıcıyı engelle</button>
         </aside>
       ) : (
         <aside className={cn("hidden lg:flex w-80 border-l", isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200")} />
       )}
 
-      {/* Preview Modal for image/video */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className={cn("w-full max-w-md rounded-3xl shadow-2xl border p-6 relative", isDark ? "bg-[#0f172a] border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900")}>
+            <button
+              onClick={() => setShowSettingsModal(false)}
+              className={cn("absolute right-4 top-4 p-2 rounded-full", isDark ? "text-slate-400 hover:bg-slate-800" : "text-slate-500 hover:bg-slate-100")}
+              aria-label="Kapat"
+            >
+              <X size={18} />
+            </button>
+            <h3 className="text-xl font-semibold mb-4">Ayarlar</h3>
+            <div className="space-y-2">
+              {[
+                { label: "Profil", desc: "Profil bilgilerini guncelle", icon: <UserIcon size={18} />, onClick: () => navigate('/settings/change-profile') },
+                { label: "Parola", desc: "Parolayi degistir", icon: <Lock size={18} />, onClick: () => navigate('/settings/change-password') },
+                { label: "E-posta", desc: "E-postayi degistir", icon: <Mail size={18} />, onClick: () => navigate('/settings/change-email') },
+                { label: "Kullanici adi", desc: "Yakinda kullanilabilir", icon: <AtSign size={18} />, onClick: () => navigate('/settings/change-username'), disabled: false },
+                { label: "Cihazlar", desc: "Yakinda kullanilabilir", icon: <ExternalLink size={18} />, onClick: () => navigate('/settings/device'), disabled: false },
+              ].map((item) => (
+                <button
+                  key={item.label}
+                  onClick={() => {
+                    if (item.disabled) return;
+                    setShowSettingsModal(false);
+                    item.onClick?.();
+                  }}
+                  className={cn(
+                    "w-full flex items-center justify-between px-3 py-3 rounded-xl border transition-colors text-left",
+                    item.disabled
+                      ? isDark ? "border-slate-800 text-slate-500 cursor-not-allowed" : "border-slate-200 text-slate-400 cursor-not-allowed"
+                      : isDark ? "border-slate-800 hover:border-indigo-500 hover:bg-slate-900/60" : "border-slate-200 hover:border-indigo-500 hover:bg-indigo-50"
+                  )}
+                  disabled={item.disabled}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={cn("p-2 rounded-lg", isDark ? "bg-slate-900 text-slate-100" : "bg-slate-100 text-slate-700")}>{item.icon}</span>
+                    <div>
+                      <div className="font-semibold text-sm">{item.label}</div>
+                      {item.desc && <div className={cn("text-xs", isDark ? "text-slate-400" : "text-slate-500")}>{item.desc}</div>}
+                    </div>
+                  </div>
+                  {!item.disabled && <ExternalLink size={16} className={cn(isDark ? "text-slate-400" : "text-slate-500")} />}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fotoğraf/video için önizleme modali */}
       {previewFile && previewUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="bg-[#1f2a3a] text-slate-100 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
-              <div className="font-semibold text-lg">{previewFile.type.startsWith('video/') ? 'Video faylini yuborish' : 'Rasm yuborish'}</div>
+              <div className="font-semibold text-lg">{previewFile.type.startsWith('video/') ? 'Video dosyasını gönder' : 'Fotoğraf gönder'}</div>
               <button onClick={handleClosePreview} className="text-slate-400 hover:text-white">
                 <X size={18} />
               </button>
@@ -3206,33 +3253,33 @@ const ChatDashboardInner: React.FC = () => {
               </div>
               <label className="flex items-center gap-2 text-sm text-slate-300">
                 <input type="checkbox" checked={previewCompress} onChange={(e) => setPreviewCompress(e.target.checked)} />
-                Tasvirni siqish (hozircha faolsiz)
+                Görseli sıkıştır (şu anda devre dışı)
               </label>
               <div>
-                <label className="text-xs text-slate-400">Izoh</label>
+                <label className="text-xs text-slate-400">Açıklama</label>
                 <input
                   value={previewCaption}
                   onChange={(e) => setPreviewCaption(e.target.value)}
                   className="mt-1 w-full bg-slate-800 text-slate-100 rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-sky-500"
-                  placeholder="Izoh yozing..."
+                  placeholder="Açıklama yazın..."
                 />
               </div>
               <div className="flex justify-end gap-3 pt-2 border-t border-slate-700">
-                <button onClick={handleClosePreview} className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm">Bekor qilish</button>
-                <button onClick={handleSendPreview} className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-sm text-white">Yuborish</button>
+                <button onClick={handleClosePreview} className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm">İptal</button>
+                <button onClick={handleSendPreview} className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-sm text-white">Gönder</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Live video note preview bubble (Telegram-like) */}
-      {/* File Modal for non-image/video files */}
+      {/* Canlı video not önizleme balonu (Telegram benzeri) */}
+      {/* Fotoğraf/video olmayan dosyalar için dosya modali */}
       {fileModal && selectedChat && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-white text-slate-900 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-200">
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-              <div className="font-semibold text-base">Faylni yuborish</div>
+              <div className="font-semibold text-base">Dosyayı gönder</div>
               <button onClick={handleCancelFileModal} className="text-slate-400 hover:text-slate-600">
                 <X size={18} />
               </button>
@@ -3248,18 +3295,18 @@ const ChatDashboardInner: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="text-xs text-slate-500">Izoh (ixtiyoriy)</label>
+                <label className="text-xs text-slate-500">Açıklama (isteğe bağlı)</label>
                 <input
                   value={fileModal.caption}
                   onChange={(e) => setFileModal({ ...fileModal, caption: e.target.value })}
                   className="mt-1 w-full bg-white text-slate-900 rounded-lg px-3 py-2 border border-slate-200 focus:outline-none focus:border-sky-500"
-                  placeholder="Izoh yozing..."
+                  placeholder="Açıklama yazın..."
                 />
               </div>
             </div>
             <div className="flex justify-end gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50">
-              <button onClick={handleCancelFileModal} className="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100">Bekor qilish</button>
-              <button onClick={handleSendFileModal} className="px-4 py-2 rounded-lg text-sm text-white bg-sky-600 hover:bg-sky-500">Yuborish</button>
+              <button onClick={handleCancelFileModal} className="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100">İptal</button>
+              <button onClick={handleSendFileModal} className="px-4 py-2 rounded-lg text-sm text-white bg-sky-600 hover:bg-sky-500">Gönder</button>
             </div>
           </div>
         </div>
@@ -3277,7 +3324,3 @@ export default function ChatDashboard() {
     </ChatErrorBoundary>
   );
 }
-
-
-
-

@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authService } from '../services/authService';
-import { User, Mail, Lock, UserPlus, ArrowRight } from 'lucide-react';
+import { User, Mail, Lock, ArrowRight } from 'lucide-react';
 
 const SignUp: React.FC = () => {
   const navigate = useNavigate();
@@ -19,9 +18,9 @@ const SignUp: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (formData.password.length < 8) {
-      setError('Parol kamida 8 ta belgidan iborat bo\'lishi kerak');
+      setError('Şifre en az 8 karakter olmalı');
       return;
     }
 
@@ -34,7 +33,7 @@ const SignUp: React.FC = () => {
         setError(res.data.message);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Xatolik yuz berdi');
+      setError(err.response?.data?.message || 'Bir hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -48,8 +47,8 @@ const SignUp: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
       <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl overflow-hidden">
         <div className="bg-indigo-600 p-8 text-white text-center">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Ro'yxatdan o'tish</h1>
-          <p className="text-indigo-100 opacity-90">Yangi hisob yarating</p>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Kayıt olun</h1>
+          <p className="text-indigo-100 opacity-90">Yeni bir hesap oluşturun</p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-4">
@@ -57,33 +56,33 @@ const SignUp: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Ism</label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">İsim</label>
               <input type="text" name="firstname" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Ali" value={formData.firstname} onChange={handleChange} />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Familiya</label>
-              <input type="text" name="lastname" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Valiyev" value={formData.lastname} onChange={handleChange} />
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Soyisim</label>
+              <input type="text" name="lastname" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Yılmaz" value={formData.lastname} onChange={handleChange} />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Foydalanuvchi nomi</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Kullanıcı adı</label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input type="text" name="username" required className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="aliv" value={formData.username} onChange={handleChange} />
+              <input type="text" name="username" required className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="kullanici" value={formData.username} onChange={handleChange} />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Email</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">E-posta</label>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input type="email" name="email" required className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="ali@mail.uz" value={formData.email} onChange={handleChange} />
+              <input type="email" name="email" required className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="ali@mail.com" value={formData.email} onChange={handleChange} />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Parol</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Şifre</label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input type="password" name="password" required className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="••••••••" value={formData.password} onChange={handleChange} />
@@ -95,16 +94,16 @@ const SignUp: React.FC = () => {
             disabled={loading}
             className="w-full py-4 mt-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50"
           >
-            {loading ? 'Yuborilmoqda...' : (
+            {loading ? 'Gönderiliyor...' : (
               <>
-                Ro'yxatdan o'tish
+                Kayıt ol
                 <ArrowRight size={20} />
               </>
             )}
           </button>
 
           <p className="text-center text-slate-500 text-sm mt-4">
-            Hisobingiz bormi? <Link to="/signin" className="text-indigo-600 font-bold hover:underline">Kirish</Link>
+            Hesabınız var mı? <Link to="/signin" className="text-indigo-600 font-bold hover:underline">Giriş yap</Link>
           </p>
         </form>
       </div>

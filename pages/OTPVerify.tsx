@@ -45,6 +45,19 @@ const OTPVerify: React.FC = () => {
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const text = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!text) return;
+    e.preventDefault();
+    const next = text.padEnd(6, '').split('').slice(0, 6);
+    setCode(next);
+    // focus last filled
+    const lastIndex = Math.min(text.length, 6) - 1;
+    if (lastIndex >= 0 && inputs.current[lastIndex]) {
+      inputs.current[lastIndex].focus();
+    }
+  };
+
   const handleVerify = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const finalCode = code.join('');
@@ -74,7 +87,7 @@ const OTPVerify: React.FC = () => {
         setError(res.data.message);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Kod noto\'g\'ri');
+      setError(err.response?.data?.message || 'Kod hatali');
     } finally {
       setLoading(false);
     }
@@ -90,12 +103,12 @@ const OTPVerify: React.FC = () => {
           setTimer(120);
           return;
         }
-        setError(res.data.message || 'Kodni qayta yuborib bo\'lmadi');
+        setError(res.data.message || 'Kod yeniden gönderilemedi');
         return;
       }
-      setError('Kodni qayta yuborish uchun iltimos kirish sahifasiga qayting.');
+      setError('Kodu yeniden göndermek için lütfen giriş sayfasına dönün.');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Kodni qayta yuborib bo\'lmadi');
+      setError(err.response?.data?.message || 'Kod yeniden gönderilemedi');
     }
   };
 
@@ -103,16 +116,16 @@ const OTPVerify: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8">
         <button onClick={() => navigate(-1)} className="mb-6 text-slate-400 hover:text-slate-600 flex items-center gap-1 text-sm font-medium">
-          <ArrowLeft size={16} /> Orqaga
+          <ArrowLeft size={16} /> Geri
         </button>
 
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <ShieldCheck size={32} />
           </div>
-          <h2 className="text-2xl font-bold text-slate-800">Tasdiqlash kodi</h2>
+          <h2 className="text-2xl font-bold text-slate-800">Doğrulama kodu</h2>
           <p className="text-slate-500 mt-2 text-sm px-4">
-            6 xonali kod <b>{maskedEmail || identifier}</b> manziliga yuborildi
+            6 haneli kod <b>{maskedEmail || identifier}</b> adresine gönderildi
           </p>
         </div>
 
@@ -127,6 +140,7 @@ const OTPVerify: React.FC = () => {
               value={digit}
               onChange={(e) => handleChange(idx, e.target.value)}
               onKeyDown={(e) => handleKeyDown(idx, e)}
+              onPaste={idx === 0 ? handlePaste : undefined}
               className="w-12 h-14 text-center text-xl font-bold bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 focus:bg-white outline-none transition-all"
             />
           ))}
@@ -139,7 +153,7 @@ const OTPVerify: React.FC = () => {
           disabled={loading || code.some(d => !d)}
           className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-200 disabled:opacity-50"
         >
-          {loading ? 'Tekshirilmoqda...' : 'Tasdiqlash'}
+          {loading ? 'Doğrulanıyor...' : 'Doğrula'}
         </button>
 
         <div className="mt-8 text-center">
@@ -152,7 +166,7 @@ const OTPVerify: React.FC = () => {
             disabled={timer > 0}
             className="text-indigo-600 font-bold text-sm hover:underline disabled:text-slate-300 disabled:no-underline"
           >
-            Kodni qayta yuborish
+            Kodu yeniden gönder
           </button>
         </div>
       </div>

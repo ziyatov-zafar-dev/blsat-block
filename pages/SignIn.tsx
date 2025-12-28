@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authService } from '../services/authService';
-import { KeyRound, Mail, AlertCircle, ArrowRight } from 'lucide-react';
+import { KeyRound, Mail, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 const SignIn: React.FC = () => {
   const navigate = useNavigate();
@@ -10,6 +9,7 @@ const SignIn: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +24,7 @@ const SignIn: React.FC = () => {
         setError(res.data.message);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Xatolik yuz berdi');
+      setError(err.response?.data?.message || 'Bir hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -34,8 +34,8 @@ const SignIn: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden">
         <div className="bg-indigo-600 p-8 text-white text-center">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Xush kelibsiz</h1>
-          <p className="text-indigo-100 opacity-90">Hisobingizga kiring</p>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Hoş geldiniz</h1>
+          <p className="text-indigo-100 opacity-90">Hesabınıza giriş yapın</p>
         </div>
         
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
@@ -47,14 +47,14 @@ const SignIn: React.FC = () => {
           )}
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700 block">Email yoki Foydalanuvchi nomi</label>
+            <label className="text-sm font-semibold text-slate-700 block">E-posta veya Kullanıcı adı</label>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="text"
                 required
                 className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                placeholder="misol@mail.com"
+                placeholder="ornek@mail.com"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
               />
@@ -63,19 +63,27 @@ const SignIn: React.FC = () => {
 
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-sm font-semibold text-slate-700 block">Parol</label>
-              <Link to="/forgot-password" title="Parolni unutdingizmi?" className="text-xs text-indigo-600 hover:underline">Unutdingizmi?</Link>
+              <label className="text-sm font-semibold text-slate-700 block">Şifre</label>
+              <Link to="/forgot-password" title="Şifrenizi mi unuttunuz?" className="text-xs text-indigo-600 hover:underline">Unuttunuz mu?</Link>
             </div>
             <div className="relative">
               <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
-                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                className="w-full pl-12 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-500 hover:text-slate-700"
+                aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
 
@@ -84,9 +92,9 @@ const SignIn: React.FC = () => {
             disabled={loading}
             className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50"
           >
-            {loading ? 'Kirilmoqda...' : (
+            {loading ? 'Giriş yapılıyor...' : (
               <>
-                Kirish
+                Giriş
                 <ArrowRight size={20} />
               </>
             )}
@@ -94,8 +102,8 @@ const SignIn: React.FC = () => {
 
           <div className="text-center pt-2">
             <p className="text-slate-500 text-sm">
-              Hisobingiz yo'qmi?{' '}
-              <Link to="/signup" className="text-indigo-600 font-bold hover:underline">Ro'yxatdan o'ting</Link>
+              Hesabınız yok mu?{' '}
+              <Link to="/signup" className="text-indigo-600 font-bold hover:underline">Kayıt olun</Link>
             </p>
           </div>
         </form>
