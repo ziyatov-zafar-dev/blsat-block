@@ -1,3 +1,0 @@
-module.exports=[98027,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(69404);a.n(d("[project]/Downloads/Telegram Desktop/block-puzzle-game/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},51522,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(69404);a.n(d("[project]/Downloads/Telegram Desktop/block-puzzle-game/node_modules/next/dist/client/components/builtin/global-error.js"))},50616,a=>{"use strict";a.i(98027);var b=a.i(51522);a.n(b)}];
-
-//# sourceMappingURL=f9432_next_dist_client_components_builtin_global-error_d423be9c.js.map

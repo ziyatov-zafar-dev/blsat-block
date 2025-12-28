@@ -1,0 +1,8 @@
+{
+  "name": "CodeByZ Messaging Suite",
+  "description": "A high-performance, real-time messaging application with multi-device support, OTP authentication, and secure profile management.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
